@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Poke App
+Exec=AppRun
+Icon=pos
+Categories=Development;
+Terminal=false

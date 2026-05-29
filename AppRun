@@ -1,0 +1,21 @@
+#!/bin/bash 
+HERE="$(dirname "$(readlink -f "${0}")")" 
+
+# Use the actual version found in your build (e.g., 3.12) 
+export PY_VERSION="3.12"  
+
+# Point to the site-packages inside your venv 
+#export PYTHONPATH="$HERE/usr/venv/lib/python$PY_VERSION/site-packages" 
+export PYTHONPATH="~/Documents/poke/venv/lib/python3.12/site-packages"
+
+# IMPORTANT: Unset PYTHONHOME if you are relying on the system's  
+# standard library but your own venv packages. 
+# OR, if you want it fully portable, you must bundle the lib folder. 
+unset PYTHONHOME  
+
+# Run using the bundled python if it exists, otherwise system python 
+source ~/Documents/poke/venv/bin/activate
+"$HERE/usr/venv/bin/python3" -m streamlit run "$HERE/usr/poke/Home.py" --server.headless true 
+#"~/Documents/poke/venv/bin/python" -m streamlit run "~/Documents/poke/Home.py" 
+
+export PYTHONHOME="$HERE/usr" 

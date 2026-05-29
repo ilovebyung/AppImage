@@ -1,0 +1,82 @@
+# install_guide.txt
+
+This guide explains how to bundle a Streamlit application into a portable AppImage using appimagetool. The process involves creating a self-contained directory called an AppDir and compressing it into a single executable
+
+---
+
+### 1. Prepare the AppDir Structure
+Create a root folder named Poke.AppDir. To avoid duplication errors, ensure you copy the contents of your project folder into usr/poke/, not the folder itself 
+
+Poke.AppDir/
+├── AppRun (Entry point script)
+├── poke.desktop (Metadata for Linux)
+├── pos.png (App Icon)
+└── usr/
+    ├── poke/ (Your Streamlit source code)
+    ├── venv/ (Your Python virtual environment)
+    └── bin/ (Python executable)
+
+# Create the directory for the standard library
+cd ~/Documents
+mkdir -p Poke.AppDir/usr/lib/python3.12
+
+# Copy the standard library from your host system
+# This includes the 'encodings' module Python is complaining about
+cp -r /usr/lib/python3.12/* Poke.AppDir/usr/lib/python3.12/
+
+# Ensure you don't overwrite your internal site-packages if you already copied them
+mkdir -p Poke.AppDir/usr/lib/python3.12/site-packages
+
+Commands to populate the structure:
+- Source Code: cp -r ~/Documents/poke Poke.AppDir/usr/
+- Environment: cp -r ~/Documents/poke/venv Poke.AppDir/usr/venv
+- Icons: Ensure pos.png is placed in the Poke.AppDir root.
+
+Note on Persistent Data: Since AppImages are read-only, move databases or credentials to a persistent local directory:
+mkdir -p ~/.local/share/pos && cp credentials.yaml pos.database ~/.local/share/pos/
+
+---
+
+### 2. Create the AppRun Script
+The AppRun script handles environment variables and launches the app when the AppImage is opened. Create Poke.AppDir/AppRun with the following content:
+
+#!/bin/bash
+HERE="$(dirname "$(readlink -f "${0}")")"
+
+# Define Python version and paths
+export PY_VERSION="3.12"
+export PYTHONPATH="$HERE/usr/venv/lib/python$PY_VERSION/site-packages"
+
+# Set PYTHONHOME to ensure it uses the bundled library
+export PYTHONHOME="$HERE/usr"
+
+# Run Streamlit in headless mode
+"$HERE/usr/venv/bin/python3" -m streamlit run "$HERE/usr/poke/Home.py" --server.headless true
+
+Run 'chmod +x Poke.AppDir/AppRun' to make it executable.
+
+---
+
+### 3. Create the Desktop Entry
+Create Poke.AppDir/poke.desktop to provide the system with application metadata:
+
+[Desktop Entry]
+Type=Application
+Name=Poke App
+Exec=AppRun
+Icon=pos
+Categories=Development;
+Terminal=false
+
+---
+
+### 4. Build the AppImage
+Use the appimagetool to finalize the build.
+
+1. Download the tool: https://github.com/AppImage/appimagetool/releases
+2. Make it executable: chmod +x appimagetool-x86_64.AppImage
+3. Generate the image:
+   ARCH=x86_64 ./appimagetool-x86_64.AppImage Poke.AppDir
+   
+4. chmod +x Poke_App-x86_64.AppImage
+   
