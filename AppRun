@@ -15,7 +15,7 @@ unset PYTHONHOME
 
 # Run using the bundled python if it exists, otherwise system python 
 source ~/Documents/poke/venv/bin/activate
-"$HERE/usr/venv/bin/python3" -m streamlit run "$HERE/usr/poke/Home.py" --server.headless true 
+"$HERE/usr/venv/bin/python3" -m streamlit run "$HERE/usr/poke/Home.py" --server.headless true --server.port 8888
 #"~/Documents/poke/venv/bin/python" -m streamlit run "~/Documents/poke/Home.py" 
 
 export PYTHONHOME="$HERE/usr" 

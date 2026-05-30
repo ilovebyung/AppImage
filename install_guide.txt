@@ -1,82 +1,54 @@
 # install_guide.txt
+# ------------------------------------------------------------
+# Bundle a Streamlit application into a portable AppImage
+# using appimagetool.  The process creates a self‑contained
+# directory (AppDir) and then compresses it into a single
+# executable.
+# ------------------------------------------------------------
 
-This guide explains how to bundle a Streamlit application into a portable AppImage using appimagetool. The process involves creating a self-contained directory called an AppDir and compressing it into a single executable
+# 1. Create the AppDir structure
+mkdir -p Poke.AppDir/usr/{bin,lib/python3.12,share/applications}
 
----
+# 2. Copy the Python standard library (including the 'encodings' module)
+#    – this resolves the “module encodings is missing” error
+cp -r /usr/lib/python3.12/* Poke.AppDir/usr/lib/python3.12/   # [1]
 
-### 1. Prepare the AppDir Structure
-Create a root folder named Poke.AppDir. To avoid duplication errors, ensure you copy the contents of your project folder into usr/poke/, not the folder itself 
+# 3. Copy the project files (source code, requirements, etc.) **without**
+#    duplicating the top‑level folder.  The contents of the project
+#    directory are placed directly under `usr/poke/`.
+PROJECT_ROOT=~/Documents/poke          # adjust to your actual path
+mkdir -p Poke.AppDir/usr/poke
+cp -r "$PROJECT_ROOT"/.* "$PROJECT_ROOT"/* Poke.AppDir/usr/poke/   # [1]
 
-Poke.AppDir/
-├── AppRun (Entry point script)
-├── poke.desktop (Metadata for Linux)
-├── pos.png (App Icon)
-└── usr/
-    ├── poke/ (Your Streamlit source code)
-    ├── venv/ (Your Python virtual environment)
-    └── bin/ (Python executable)
+# 4. Install the virtual‑environment dependencies into the AppDir
+python3 -m venv Poke.AppDir/usr/venv
+source Poke.AppDir/usr/venv/bin/activate
+pip install -r "$PROJECT_ROOT/requirements.txt"
 
-# Create the directory for the standard library
-cd ~/Documents
-mkdir -p Poke.AppDir/usr/lib/python3.12
+# 5. Add the Streamlit entry point (e.g., a wrapper script)
+cat > Poke.AppDir/usr/bin/poke <<'EOF'
+#!/usr/bin/env bash
+exec "$PWD/../venv/bin/streamlit" run "$PWD/../poke/main.py" \
+    --server.headless true \
+    --server.port 8888  "$@"
+EOF
+chmod +x Poke.AppDir/usr/bin/poke
 
-# Copy the standard library from your host system
-# This includes the 'encodings' module Python is complaining about
-cp -r /usr/lib/python3.12/* Poke.AppDir/usr/lib/python3.12/
-
-# Ensure you don't overwrite your internal site-packages if you already copied them
-mkdir -p Poke.AppDir/usr/lib/python3.12/site-packages
-
-Commands to populate the structure:
-- Source Code: cp -r ~/Documents/poke Poke.AppDir/usr/
-- Environment: cp -r ~/Documents/poke/venv Poke.AppDir/usr/venv
-- Icons: Ensure pos.png is placed in the Poke.AppDir root.
-
-Note on Persistent Data: Since AppImages are read-only, move databases or credentials to a persistent local directory:
-mkdir -p ~/.local/share/pos && cp credentials.yaml pos.database ~/.local/share/pos/
-
----
-
-### 2. Create the AppRun Script
-The AppRun script handles environment variables and launches the app when the AppImage is opened. Create Poke.AppDir/AppRun with the following content:
-
-#!/bin/bash
-HERE="$(dirname "$(readlink -f "${0}")")"
-
-# Define Python version and paths
-export PY_VERSION="3.12"
-export PYTHONPATH="$HERE/usr/venv/lib/python$PY_VERSION/site-packages"
-
-# Set PYTHONHOME to ensure it uses the bundled library
-export PYTHONHOME="$HERE/usr"
-
-# Run Streamlit in headless mode
-"$HERE/usr/venv/bin/python3" -m streamlit run "$HERE/usr/poke/Home.py" --server.headless true
-
-Run 'chmod +x Poke.AppDir/AppRun' to make it executable.
-
----
-
-### 3. Create the Desktop Entry
-Create Poke.AppDir/poke.desktop to provide the system with application metadata:
-
+# 6. (Optional) Add desktop file and icon so the AppImage integrates
+cat > Poke.AppDir/usr/share/applications/poke.desktop <<'EOF'
 [Desktop Entry]
-Type=Application
-Name=Poke App
-Exec=AppRun
+Name=Poke
+Exec=poke
 Icon=pos
-Categories=Development;
-Terminal=false
+Type=Application
+Categories=Utility;
+EOF
 
----
+# cp AppImage/AppRun AppImage/poke.desktop AppImage/pos.png Poke.AppDir/
+# cp Poke.AppDir/usr/poke/.streamlit/credentials.yaml ~/.local/share/pos
+# cp Poke.AppDir/usr/poke/pos.database ~/.local/share/pos
 
-### 4. Build the AppImage
-Use the appimagetool to finalize the build.
+# 7. Build the AppImage
+./appimagetool-x86_64.AppImage Poke.AppDir
 
-1. Download the tool: https://github.com/AppImage/appimagetool/releases
-2. Make it executable: chmod +x appimagetool-x86_64.AppImage
-3. Generate the image:
-   ARCH=x86_64 ./appimagetool-x86_64.AppImage Poke.AppDir
-   
-4. chmod +x Poke_App-x86_64.AppImage
-   
+
