@@ -1,6 +1,5 @@
 [Desktop Entry]
-Type=Application
-Name=Poke App
+Name=Poke
 Exec=AppRun
 Icon=pos
 Categories=Development;

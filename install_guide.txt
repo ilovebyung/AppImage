@@ -34,7 +34,7 @@ exec "$PWD/../venv/bin/streamlit" run "$PWD/../poke/main.py" \
 EOF
 chmod +x Poke.AppDir/usr/bin/poke
 
-# 6. (Optional) Add desktop file and icon so the AppImage integrates
+# 6. Add desktop file and icon so the AppImage integrates
 cat > Poke.AppDir/usr/share/applications/poke.desktop <<'EOF'
 [Desktop Entry]
 Name=Poke
@@ -44,7 +44,10 @@ Type=Application
 Categories=Utility;
 EOF
 
-# cp AppImage/AppRun AppImage/poke.desktop AppImage/pos.png Poke.AppDir/
+## Optional
+# cp AppImage/AppRun AppImage/poke.desktop Poke.AppDir/
+# cp AppImage/pos.png Poke.AppDir/
+
 # cp Poke.AppDir/usr/poke/.streamlit/credentials.yaml ~/.local/share/pos
 # cp Poke.AppDir/usr/poke/pos.database ~/.local/share/pos
 

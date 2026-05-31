@@ -1,0 +1,295 @@
+-- 🏢 Company  (4 digit phone number)
+CREATE TABLE IF NOT EXISTS Company (
+    company_id INTEGER PRIMARY KEY,
+    description TEXT NOT NULL 
+);
+
+-- 🏢 Site  (4 digit phone number)
+CREATE TABLE IF NOT EXISTS Site (
+    site_id INTEGER PRIMARY KEY,
+    description TEXT NOT NULL 
+);
+
+-- 🏢 Device
+CREATE TABLE IF NOT EXISTS Device (
+    device_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    description TEXT NOT NULL,
+    ip_address TEXT 
+);
+
+-- 🏢 Service Area 
+CREATE TABLE IF NOT EXISTS Service_Area (
+    service_area_id INTEGER PRIMARY KEY, 
+    description TEXT,
+    status INTEGER DEFAULT 0,
+    timestamp DATETIME DEFAULT (datetime('now', 'localtime'))
+);
+
+
+-- 🥪 Category Table
+CREATE TABLE IF NOT EXISTS Category (
+    category_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    description TEXT NOT NULL,
+    status INTEGER DEFAULT 1
+);
+
+-- 🥪 Product Table
+CREATE TABLE IF NOT EXISTS Product (
+    product_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    description TEXT NOT NULL,
+    category_id INTEGER,
+    price INTEGER NOT NULL,
+    tax REAL DEFAULT 4.712,
+    status INTEGER DEFAULT 1,
+    rank INTEGER DEFAULT 1,
+    FOREIGN KEY (category_id) REFERENCES Category(category_id)
+);
+
+-- 🧂 Modifier Type 
+CREATE TABLE IF NOT EXISTS Modifier_Type (
+    modifier_type_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    description TEXT NOT NULL
+);
+
+
+-- 🧂Modifier 
+CREATE TABLE IF NOT EXISTS Modifier (
+    modifier_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    description TEXT NOT NULL,
+    product_id INTEGER,
+    modifier_type_id INTEGER DEFAULT 1,
+    price INTEGER DEFAULT 0 CHECK (price >= 0 AND typeof(price) = 'integer'),
+    status INTEGER DEFAULT 1,
+    FOREIGN KEY (product_id) REFERENCES Product(product_id),
+    FOREIGN KEY (modifier_type_id) REFERENCES Modifier_Type(modifier_type_id),
+    FOREIGN KEY (modifier_id) REFERENCES Modifier_Item(modifier_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_modifier_product_id 
+ON Modifier(product_id);
+
+-- 🛒 Order Product Table
+CREATE TABLE IF NOT EXISTS Order_Product (
+    order_product_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id INTEGER,
+    product_id INTEGER,
+    modifiers TEXT,
+    product_quantity INTEGER NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES Order_Cart(order_id),
+    FOREIGN KEY (product_id) REFERENCES Product(product_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_product_order_id 
+ON Order_Product(order_id);
+
+-- 🛒 Order_Cart Table  (‘Order’ is a reserved word)
+CREATE TABLE IF NOT EXISTS Order_Cart (
+    order_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_status INTEGER NOT NULL DEFAULT 0,
+    service_area_id INTEGER NOT NULL,
+    customer_id INTEGER,
+    username TEXT,
+    subtotal INTEGER DEFAULT 0,
+    total INTEGER DEFAULT 0,
+    tip INTEGER DEFAULT 0,
+    provided_name TEXT,
+    note TEXT,
+    created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+    FOREIGN KEY (service_area_id) REFERENCES Service_Area(service_area_id),
+    FOREIGN KEY (customer_id) REFERENCES Customer(customer_id)
+);
+
+-- 🛒 Order Live Cart Table
+CREATE TABLE IF NOT EXISTS Live_Cart (
+    session_id TEXT,
+    product_name TEXT,
+    modifiers_text TEXT,
+    quantity INTEGER,
+    unit_price INTEGER,
+    total_price INTEGER,
+    last_updated DATETIME DEFAULT (datetime('now', 'localtime'))
+);
+
+-- 🛒📜 Order History Table
+CREATE TABLE IF NOT EXISTS  Order_History (
+    order_id INTEGER,
+    order_status INTEGER,
+    username TEXT,
+    subtotal INTEGER,
+    total INTEGER,
+    timestamp DATETIME DEFAULT (datetime('now', 'localtime')),
+    FOREIGN KEY (order_id) REFERENCES Order_Cart(order_id)
+); 
+
+CREATE TRIGGER IF NOT EXISTS log_order_insert
+AFTER INSERT ON Order_Cart
+FOR EACH ROW
+BEGIN
+    INSERT INTO Order_History (order_id, order_status, username, subtotal, total, timestamp)
+    VALUES (NEW.order_id, NEW.order_status, NEW.username, NEW.subtotal, NEW.total, CURRENT_TIMESTAMP);
+END;
+
+CREATE TRIGGER IF NOT EXISTS log_order_update
+AFTER UPDATE ON Order_Cart
+FOR EACH ROW
+BEGIN
+    INSERT INTO Order_History (order_id, order_status, username, subtotal, total, timestamp)
+    VALUES (NEW.order_id, NEW.order_status, NEW.username, NEW.subtotal, NEW.total, CURRENT_TIMESTAMP);
+END;
+
+CREATE INDEX IF NOT EXISTS idx_order_history_order_id 
+ON Order_History(order_id);
+
+CREATE INDEX IF NOT EXISTS idx_order_history_timestamp
+ON Order_History(timestamp);
+
+
+-- 👤 Customer Table
+CREATE TABLE IF NOT EXISTS Customer (
+    customer_id INTEGER PRIMARY KEY, -- phone number as unique int
+    description TEXT, -- name, initial or anything a customer wishes to be 
+    point INTEGER DEFAULT 0
+);
+
+-- 👤📜 Customer History Table
+CREATE TABLE IF NOT EXISTS  Customer_History (
+    customer_id INTEGER,
+    point INTEGER,
+    timestamp DATETIME DEFAULT (datetime('now', 'localtime')),
+    FOREIGN KEY (customer_id) REFERENCES Customer(customer_id)
+); 
+
+CREATE TRIGGER IF NOT EXISTS log_customer_insert
+AFTER INSERT ON Customer
+FOR EACH ROW
+BEGIN
+    INSERT INTO Customer_History (customer_id, point, timestamp)
+    VALUES (NEW.customer_id, NEW.point, CURRENT_TIMESTAMP);
+END;
+
+CREATE TRIGGER IF NOT EXISTS log_customer_update
+AFTER UPDATE ON Customer
+FOR EACH ROW
+BEGIN
+    INSERT INTO Customer_History (customer_id, point, timestamp)
+    VALUES (NEW.customer_id, NEW.point, CURRENT_TIMESTAMP);
+END;
+
+
+
+--------------------------------------------
+---- 🥂 insert sample rows 🍾 ----
+--------------------------------------------
+
+-- 🏢 Company  (4 digit phone number)
+INSERT INTO Company (company_id, description) VALUES
+(1234, 'Honolulu Bistro');
+
+-- 🏢 Site  (4 digit phone number)
+INSERT INTO Site (site_id, description) VALUES
+(5678, 'Ala Moana');
+
+-- 🏢 Device
+INSERT INTO Device (description, ip_address) VALUES
+('default', '192.168.0.60');
+
+-- 🏢 Table  (0: )
+INSERT INTO Service_Area (service_area_id, description) VALUES
+(1, 'buffet tables for eight'),
+(2, 'square table for two'),
+(3, 'rectangular table for four'),
+(4, 'round table for six'),
+(5, 'VIP booth'),
+(6, 'outdoor patio table'),
+(7, 'bar counter seat'),
+(8, 'window-side table for two');
+
+
+-- 🗂️ Category  
+INSERT INTO Category (category_id, description) VALUES
+(1, 'Poke'),  -- 🍚
+(2, 'Sides'),  -- 🍲
+(3, 'Drink'),  -- 🥤
+(11, 'Admin');  -- 🫧
+
+-- 🍔 Poke (Category ID: 1)
+INSERT INTO Product (product_id, description, category_id, price) VALUES
+(1, 'Small', 1, 1295),
+(2, 'Medium', 1, 1495),
+(3, 'Large', 1, 1695);
+
+-- 🍲 Sides (Category ID: 2)
+INSERT INTO Product (product_id, description, category_id, price) VALUES
+(4, 'Soup', 2, 99);
+
+-- 🥤 Drink (Category ID: 3)
+INSERT INTO Product (description, category_id, price) VALUES
+('Ume iced tea (Season special)', 3, 399),
+('Orange juice', 3, 289),
+('Apple juice', 3, 289),
+('Cranberry juice', 3, 289),
+('Green tea bottle', 3, 289),
+('Monster energy', 3, 289),
+('Perrier water', 3, 289),
+('Arizona iced tea', 3, 169),
+('Oolong tea', 3, 149),
+('Bottled water', 3, 99),
+('Canned Soda', 3, 99);
+
+-- 🫧 Admin (Category ID: 11)
+INSERT INTO Product (product_id, description, category_id, price) VALUES
+(110, 'dummy', 11, 0);
+
+-- 🧂 Modifier 
+INSERT INTO Modifier (modifier_type_id, description, price) VALUES
+(1,'White',0),
+(1,'Sushi',0),
+(1,'Multi-Grain',0),
+(1,'Brown',0),
+(1,'Spring Mix',0),
+(1,'Romaine',0),
+(1,'Spinach',0),
+(2,'Spicy Ahi',0),
+(2,'Salmon',0),
+(2,'Ahi (tuna)',0),
+(2,'Hamachi',0),
+(2,'Chicken Breast',0),
+(2,'Kalua Pig',0),
+(2,'Organic Tofu',0),
+(2,'Baby Scallop',0),
+(2,'Shrimp',0),
+(3,'Spicy Mayo 🌶️🌶️',0),
+(3,'Creamy Sesame',0),
+(3,'Wasabi Aioli 🌶️',0),
+(3,'Dynamite 🌶️',0),
+(3,'Korean Temper 🌶️',0),
+(3,'Shoyu',0),
+(3,'Yuzu Wasabi',0),
+(4,'Onion',0),
+(4,'Cucumber',0),
+(4,'Carrots',0),
+(4,'Edamame',0),
+(4,'Green Onion',0),
+(4,'Ocean Salad',0),
+(4,'Masago',0),
+(4,'Ginger',0),
+(4,'Beets',0),
+(4,'Jalapeno',0),
+(4,'Sweet Corn',0),
+(4,'Takuwan',0),
+(4,'Daikon Salad',0),
+(4,'Tamago',0),
+(4,'Crab Salad',0),
+(4,'Spicy Crab Salad',0),
+(4,'Ogo Seaweed',0),
+(4,'Avocado (extra $1.50)',150);
+
+
+-- 🧂 Modifier Type
+INSERT INTO Modifier_Type (modifier_type_id, description) VALUES
+(1, 'Base'),
+(2, 'Protein'),
+(3, 'Sauce'),
+(4, 'Topping'); 
+
+
