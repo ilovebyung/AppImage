@@ -7,51 +7,52 @@
 # ------------------------------------------------------------
 
 # 1. Create the AppDir structure
-mkdir -p Poke.AppDir/usr/{bin,lib/python3.12,share/applications}
+mkdir -p App.AppDir/usr/{bin,lib/python3.12,share/applications}
 
 # 2. Copy the Python standard library (including the 'encodings' module)
 #    – this resolves the “module encodings is missing” error
-cp -r /usr/lib/python3.12/* Poke.AppDir/usr/lib/python3.12/   # [1]
+cp -r /usr/lib/python3.12/* App.AppDir/usr/lib/python3.12/   # [1]
 
 # 3. Copy the project files (source code, requirements, etc.) **without**
 #    duplicating the top‑level folder.  The contents of the project
 #    directory are placed directly under `usr/poke/`.
-PROJECT_ROOT=~/Documents/poke          # adjust to your actual path
-mkdir -p Poke.AppDir/usr/poke
-cp -r "$PROJECT_ROOT"/.* "$PROJECT_ROOT"/* Poke.AppDir/usr/poke/   # [1]
+PROJECT_ROOT=~/Documents/app          # adjust to your actual path
+mkdir -p App.AppDir/usr/app
+cp -r "$PROJECT_ROOT"/.* "$PROJECT_ROOT"/* App.AppDir/usr/app/   # [1]
 
 # 4. Install the virtual‑environment dependencies into the AppDir
-python3 -m venv Poke.AppDir/usr/venv
-source Poke.AppDir/usr/venv/bin/activate
+python3 -m venv App.AppDir/usr/venv
+source App.AppDir/usr/venv/bin/activate
 pip install -r "$PROJECT_ROOT/requirements.txt"
 
 # 5. Add the Streamlit entry point (e.g., a wrapper script)
-cat > Poke.AppDir/usr/bin/poke <<'EOF'
+cat > App.AppDir/usr/bin/app <<'EOF'
 #!/usr/bin/env bash
-exec "$PWD/../venv/bin/streamlit" run "$PWD/../poke/main.py" \
+exec "$PWD/../venv/bin/streamlit" run "$PWD/../app/Home.py" \
     --server.headless true \
     --server.port 8888  "$@"
 EOF
-chmod +x Poke.AppDir/usr/bin/poke
+chmod +x App.AppDir/usr/bin/app
 
 # 6. Add desktop file and icon so the AppImage integrates
-cat > Poke.AppDir/usr/share/applications/poke.desktop <<'EOF'
+cat > App.AppDir/usr/share/applications/app.desktop <<'EOF'
 [Desktop Entry]
-Name=Poke
-Exec=poke
-Icon=pos
+Name=App
+Exec=app
+Icon=app
 Type=Application
+Terminal=false
 Categories=Utility;
 EOF
 
-## Optional
-# cp AppImage/AppRun AppImage/poke.desktop Poke.AppDir/
-# cp AppImage/pos.png Poke.AppDir/
+# Optional
+cp AppImage/AppRun AppImage/app.desktop App.AppDir/
+cp AppImage/app.png App.AppDir/
 
-# cp Poke.AppDir/usr/poke/.streamlit/credentials.yaml ~/.local/share/pos
-# cp Poke.AppDir/usr/poke/pos.database ~/.local/share/pos
+cp App.AppDir/usr/app/.streamlit/credentials.yaml ~/.local/share/pos
+cp App.AppDir/usr/app/pos.database ~/.local/share/pos
 
 # 7. Build the AppImage
-./appimagetool-x86_64.AppImage Poke.AppDir
+./appimagetool-x86_64.AppImage App.AppDir
 
 
